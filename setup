@@ -1,0 +1,115 @@
+#!/usr/bin/env bash
+
+# exit when script tries to use an undeclared variable
+set -o nounset
+# exit on error
+set -o errexit
+# exit if anything in a pipe fails
+set -o pipefail
+
+[[ "${DEBUG:-}" == 'true' ]] && set -o xtrace
+
+readonly EXE_NAME=$(basename "$0")
+readonly oneline_usage="$EXE_NAME [-hf] command"
+
+readonly DBNAME="pglocks-db"
+
+usage() {
+  cat <<-EndUsage
+		Usage: $oneline_usage
+		Use '$EXE_NAME -h' for more information
+	EndUsage
+  exit 1
+}
+
+helpinfo() {
+  cat <<-EndHelp
+Usage: $oneline_usage
+
+Commands:
+    db
+        Start postgres running in the background
+    db:logs
+        Show postgres logs
+    migrate
+        Run the migrations
+    populate
+        Populate the db with data
+    session
+        Run a psql client session
+    cleanup
+        Close down the db
+
+Flags:
+    -h
+        Show usage info
+EndHelp
+  exit 0
+}
+
+dbup() {
+  docker run -d --name $DBNAME -d postgres
+}
+
+dblogs() {
+  docker logs -f $DBNAME
+}
+
+session() {
+  docker exec -it $DBNAME psql -U postgres postgres
+}
+
+migrate() {
+  cat migrations/setup-simple-1.up.sql | docker exec -i $DBNAME psql -U postgres postgres
+}
+
+populate() {
+  cat data/simple-data.sql | docker exec -i $DBNAME psql -U postgres postgres
+}
+
+cleanup() {
+  docker rm -f $DBNAME
+}
+
+runaction() {
+  action=$(printf "%s\n" "$1" | tr 'A-Z' 'a-z')
+
+  case "$action" in
+  "db")
+    dbup
+    ;;
+  "db:logs")
+    dblogs
+    ;;
+  "migrate")
+    migrate
+    ;;
+  "populate")
+    populate
+    ;;
+  "session")
+    session
+    ;;
+  "cleanup")
+    cleanup
+    ;;
+  *)
+    usage
+    ;;
+  esac
+
+}
+
+main() {
+  while getopts "h" opt "$@"; do
+    case "$opt" in
+    h)
+      helpinfo
+      ;;
+    esac
+  done
+
+  runaction "${@:$OPTIND}"
+}
+
+main "$@"
