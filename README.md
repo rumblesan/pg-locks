@@ -2,6 +2,25 @@
 
 Exploring Postgres Locks
 
+## Using
+
+To set everything up
+```
+./setup db
+./setup migrate
+./setup populate
+```
+
+To open an sql session
+```
+./setup session
+```
+
+To cleanup
+```
+./setup cleanup
+```
+
 ## Simple Row Locks
 
 ```sql
@@ -29,5 +48,4 @@ In transaction 2 you should see rows with ids *ID1* and *ID4* now selected;
 -- transaction 2
 COMMIT
 ```
-
 

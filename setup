@@ -60,11 +60,17 @@ session() {
 }
 
 migrate() {
-  cat migrations/setup-simple-1.up.sql | docker exec -i $DBNAME psql -U postgres postgres
+  for f in $(ls ./migrations); do
+    echo "running migration $f"
+    cat "./migrations/$f" | docker exec -i $DBNAME psql -U postgres postgres
+  done
 }
 
 populate() {
-  cat data/simple-data.sql | docker exec -i $DBNAME psql -U postgres postgres
+  for f in $(ls ./data); do
+    echo "running population script $f"
+    cat "./data/$f" | docker exec -i $DBNAME psql -U postgres postgres
+  done
 }
 
 cleanup() {
